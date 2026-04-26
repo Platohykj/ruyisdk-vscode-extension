@@ -4,7 +4,6 @@
  * RuyiSDK VS Code Extension - News Module - Helper Utilities
  *
  * Contains reusable pure helpers for the news module:
- * - `parseNewsList`: converts CLI stdout into typed rows.
  * - `extractNewsSummary`: derives short summaries from markdown bodies.
  */
 
@@ -12,7 +11,6 @@ import { logger } from '../common/logger'
 
 import type { NewsRow } from './news.service'
 
-const ROW_RE = /^\s*(\d+)\s+(\S+)\s+(.+)\s*$/
 const DATE_RE = /^(\d{4}-\d{2}-\d{2})\b/
 
 interface NewsItemLang {
@@ -27,19 +25,6 @@ interface NewsItemJson {
   ord: number
   is_read: boolean
   langs: NewsItemLang[]
-}
-
-export function parseNewsList(stdout: string): NewsRow[] {
-  return stdout.split(/\r?\n/)
-    .map(line => ROW_RE.exec(line))
-    .filter((match): match is RegExpExecArray => !!match)
-    .map(([, no, id, title]) => ({
-      no: Number(no),
-      id,
-      title: title.trim(),
-      date: DATE_RE.exec(id)?.[1],
-      read: false,
-    }))
 }
 
 export function parseNewsListPorcelain(stdout: string, preferredLang?: string): NewsRow[] {
