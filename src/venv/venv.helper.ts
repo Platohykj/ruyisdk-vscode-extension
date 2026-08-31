@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import * as semver from 'semver'
+
 import { parseNDJSON } from '../common/helpers'
 import { logger } from '../common/logger'
 import ruyi from '../ruyi'
@@ -10,7 +12,31 @@ import type { PkgInfo, Toolchain } from './types'
 export type { Toolchain }
 
 /**
- * Sort items alphabetically by name, then by a version string extracted via getVersion.
+ * Compare two version strings semantically, descending (newest first).
+ * Invalid or empty versions are pushed to the end.
+ */
+function compareVersionsDesc(a: string, b: string): number {
+  const va = semver.valid(a) ?? semver.valid(semver.coerce(a))
+  const vb = semver.valid(b) ?? semver.valid(semver.coerce(b))
+
+  if (va && vb) {
+    return semver.rcompare(va, vb)
+  }
+  if (va) return -1
+  if (vb) return 1
+
+  // Both invalid/unparseable: keep a deterministic order (empty last, then reverse lexicographic).
+  const aEmpty = a === ''
+  const bEmpty = b === ''
+  if (aEmpty && bEmpty) return 0
+  if (aEmpty) return 1
+  if (bEmpty) return -1
+  return b.localeCompare(a)
+}
+
+/**
+ * Sort items alphabetically by name, then by version extracted via getVersion,
+ * using semantic version comparison with the newest version first.
  */
 function sortByNameThenVersion<T extends { name: string }>(
   items: T[],
@@ -19,7 +45,7 @@ function sortByNameThenVersion<T extends { name: string }>(
   return items.sort((a, b) => {
     const nameCmp = a.name.localeCompare(b.name)
     if (nameCmp !== 0) return nameCmp
-    return getVersion(a).localeCompare(getVersion(b))
+    return compareVersionsDesc(getVersion(a), getVersion(b))
   })
 }
 
